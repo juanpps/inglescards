@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { Sidebar, SidebarTrigger } from './components/layout/Sidebar';
 import { OnboardingOverlay } from './components/onboarding/OnboardingOverlay';
 import { Dashboard } from './pages/Dashboard';
@@ -66,6 +67,7 @@ function App() {
       {showOnboarding && (
         <OnboardingOverlay onComplete={handleOnboardingComplete} />
       )}
+      <Analytics />
     </BrowserRouter>
   );
 }
