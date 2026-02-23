@@ -331,8 +331,14 @@ export function Configuracion() {
                   variant="secondary"
                   className="flex-1 h-12 rounded-xl"
                   onClick={async () => {
-                    await CloudSyncService.uploadSnapshot(currentUser);
-                    alert("Copia de seguridad subida correctamente");
+                    try {
+                      await CloudSyncService.uploadSnapshot(currentUser, true);
+                      alert("Copia de seguridad subida correctamente");
+                    } catch (err: any) {
+                      const { remaining } = CloudSyncService.canSync();
+                      if (remaining > 0) alert(`Espera ${remaining}s para sincronizar de nuevo.`);
+                      else alert(err.message || "Error al subir");
+                    }
                   }}
                 >
                   <Cloud className="w-4 h-4 mr-2 text-indigo-600" />
@@ -342,9 +348,15 @@ export function Configuracion() {
                   variant="secondary"
                   className="flex-1 h-12 rounded-xl"
                   onClick={async () => {
-                    const updated = await CloudSyncService.syncFromCloud(currentUser);
-                    if (updated) alert("Datos sincronizados desde la nube");
-                    else alert("Ya estás al día");
+                    try {
+                      const updated = await CloudSyncService.syncFromCloud(currentUser, true);
+                      if (updated) alert("Datos sincronizados desde la nube");
+                      else alert("Ya estás al día");
+                    } catch (err: any) {
+                      const { remaining } = CloudSyncService.canSync();
+                      if (remaining > 0) alert(`Espera ${remaining}s para sincronizar de nuevo.`);
+                      else alert(err.message || "Error al sincronizar");
+                    }
                   }}
                 >
                   <RefreshCw className="w-4 h-4 mr-2 text-indigo-600" />

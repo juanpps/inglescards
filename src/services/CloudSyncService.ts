@@ -6,12 +6,30 @@ import type { User } from 'firebase/auth';
 import { publishMyStats } from './LeaderboardService';
 
 let syncTimeout: NodeJS.Timeout | null = null;
+let lastManualSyncTime = 0;
+const MANUAL_SYNC_COOLDOWN = 30000; // 30 seconds
 
 export const CloudSyncService = {
+    /** Check if a manual sync is allowed based on cooldown */
+    canSync(): { allowed: boolean; remaining: number } {
+        const now = Date.now();
+        const elapsed = now - lastManualSyncTime;
+        return {
+            allowed: elapsed >= MANUAL_SYNC_COOLDOWN,
+            remaining: Math.max(0, Math.ceil((MANUAL_SYNC_COOLDOWN - elapsed) / 1000))
+        };
+    },
+
     /**
      * Pushes the entire local database to Firestore for the given user.
+     * @param isManual If true, updates the cooldown timer.
      */
-    async uploadSnapshot(user: User) {
+    async uploadSnapshot(user: User, isManual = false) {
+        if (isManual) {
+            const { allowed } = this.canSync();
+            if (!allowed) throw new Error('Debes esperar para sincronizar de nuevo.');
+            lastManualSyncTime = Date.now();
+        }
         const localDb = loadDatabase();
         try {
             await setDoc(doc(db, 'users', user.uid), {
@@ -42,7 +60,12 @@ export const CloudSyncService = {
     /**
      * Pulls data from Firestore and merges it with local data if necessary.
      */
-    async syncFromCloud(user: User) {
+    async syncFromCloud(user: User, isManual = false) {
+        if (isManual) {
+            const { allowed } = this.canSync();
+            if (!allowed) throw new Error('Debes esperar para sincronizar de nuevo.');
+            lastManualSyncTime = Date.now();
+        }
         const docRef = doc(db, 'users', user.uid);
         try {
             const docSnap = await getDoc(docRef);

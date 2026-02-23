@@ -60,6 +60,7 @@ export function Perfil() {
     const [nameInput, setNameInput] = useState(currentUser?.displayName ?? '');
     const [savingName, setSavingName] = useState(false);
     const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
+    const [cooldown, setCooldown] = useState(0);
     const [toast, setToast] = useState<string | null>(null);
 
     const showToast = (msg: string) => {
@@ -86,12 +87,19 @@ export function Perfil() {
         if (!currentUser) return;
         setSyncStatus('syncing');
         try {
-            await CloudSyncService.uploadSnapshot(currentUser);
+            await CloudSyncService.uploadSnapshot(currentUser, true);
             setSyncStatus('done');
             showToast('✓ Datos sincronizados');
-        } catch {
+        } catch (err: any) {
             setSyncStatus('error');
-            showToast('Error al sincronizar');
+            const { remaining } = CloudSyncService.canSync();
+            if (remaining > 0) {
+                setCooldown(remaining);
+                showToast(`Espera ${remaining}s para sincronizar`);
+                setTimeout(() => setCooldown(0), remaining * 1000);
+            } else {
+                showToast(err.message || 'Error al sincronizar');
+            }
         }
         setTimeout(() => setSyncStatus('idle'), 2000);
     };
@@ -292,14 +300,16 @@ export function Perfil() {
                             </div>
                             <Button
                                 onClick={handleSync}
-                                disabled={syncStatus === 'syncing'}
+                                disabled={syncStatus === 'syncing' || cooldown > 0}
                                 className={`h-10 px-4 rounded-xl font-bold text-sm border-none ${syncStatus === 'done'
-                                        ? 'bg-emerald-500 text-white'
+                                    ? 'bg-emerald-500 text-white'
+                                    : cooldown > 0
+                                        ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
                                         : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                                     }`}
                             >
                                 <RefreshCw className={`w-4 h-4 mr-1.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                                {syncStatus === 'syncing' ? 'Subiendo...' : syncStatus === 'done' ? 'Listo' : 'Sincronizar'}
+                                {syncStatus === 'syncing' ? 'Subiendo...' : cooldown > 0 ? `Esperar ${cooldown}s` : syncStatus === 'done' ? 'Listo' : 'Sincronizar'}
                             </Button>
                         </CardContent>
                     </Card>

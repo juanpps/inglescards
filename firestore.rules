@@ -1,1 +1,31 @@
-rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /users/{userId} { allow read, write: if request.auth != null && request.auth.uid == userId; } } }
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Perfiles privados de usuario (Sincronización en la nube)
+    // Solo el dueño puede leer y escribir sus propios datos.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Ranking / Leaderboard público
+    // Cualquiera puede leer (para ver el ranking), 
+    // pero solo el dueño puede actualizar sus propios puntos.
+    match /leaderboard/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Packs de cartas compartidos por la comunidad
+    // Cualquiera puede leer y buscar packs.
+    // Solo usuarios registrados pueden crear packs.
+    // Solo el autor puede borrar su propio pack.
+    match /shared_packs/{packId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null; // Para el contador de descargas
+      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+    }
+  }
+}
