@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { Sparkles } from 'lucide-react';
+import { loadDatabase, saveDatabase } from '../../lib/storage';
 
 const STEPS = [
   {
@@ -38,6 +39,13 @@ const STEPS = [
     description: 'Ajusta límites diarios, intervalos y parámetros avanzados del algoritmo.',
     path: '/configuracion',
     selector: '[data-onboarding="config"]',
+  },
+  {
+    id: 'mode',
+    title: 'Elige tu estilo',
+    description: '¿Prefieres deslizar tarjetas (Swipe) o usar botones clásicos de precisión?',
+    path: '/',
+    selector: '',
   },
 ];
 
@@ -136,17 +144,48 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
         <p className="text-zinc-600 dark:text-zinc-400 mb-6">
           {currentStep.description}
         </p>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={handleGoTo}>
-            {isLast ? 'Empezar' : 'Ir ahí'}
-          </Button>
-          <Button variant="secondary" onClick={handleNext}>
-            {isLast ? 'Finalizar' : 'Siguiente'}
-          </Button>
-          <Button variant="ghost" onClick={handleSkip}>
-            Saltar
-          </Button>
-        </div>
+        {currentStep.id === 'mode' ? (
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={() => {
+                const db = loadDatabase();
+                db.settings.studyMode = 'swipe';
+                saveDatabase(db);
+                handleNext();
+              }}
+              className="flex-1 p-4 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 hover:border-indigo-500 transition-all text-center"
+            >
+              <div className="text-2xl mb-1">👆</div>
+              <div className="font-bold text-sm">Deslizar</div>
+              <div className="text-[10px] text-zinc-500">Rápido y táctil</div>
+            </button>
+            <button
+              onClick={() => {
+                const db = loadDatabase();
+                db.settings.studyMode = 'classic';
+                saveDatabase(db);
+                handleNext();
+              }}
+              className="flex-1 p-4 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 hover:border-indigo-500 transition-all text-center"
+            >
+              <div className="text-2xl mb-1">⌨️</div>
+              <div className="font-bold text-sm">Botones</div>
+              <div className="text-[10px] text-zinc-500">Precisión Anki</div>
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleGoTo}>
+              {isLast ? 'Empezar' : 'Ir ahí'}
+            </Button>
+            <Button variant="secondary" onClick={handleNext}>
+              {isLast ? 'Finalizar' : 'Siguiente'}
+            </Button>
+            <Button variant="ghost" onClick={handleSkip}>
+              Saltar
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

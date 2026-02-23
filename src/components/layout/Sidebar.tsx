@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   LayoutDashboard,
   BookOpen,
@@ -11,11 +12,16 @@ import {
   Menu,
   X,
   PlusSquare,
+  Trophy,
+  Share2,
+  UserCircle,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/ranking', icon: Trophy, label: 'Ranking' },
+  { to: '/compartir', icon: Share2, label: 'Comunidad' },
   { to: '/estudiar', icon: BookOpen, label: 'Estudiar', dataOnboarding: 'estudiar' as const },
   { to: '/grupos', icon: FolderKanban, label: 'Grupos', dataOnboarding: 'grupos' as const },
   { to: '/nueva-tarjeta', icon: PlusSquare, label: 'Nueva tarjeta' },
@@ -32,6 +38,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, open, onToggle, onClose }: SidebarProps) {
+  const { currentUser } = useAuth();
   return (
     <>
       {/* Overlay en móvil */}
@@ -101,6 +108,33 @@ export function Sidebar({ collapsed, open, onToggle, onClose }: SidebarProps) {
             </NavLink>
           ))}
         </nav>
+
+        {/* Profile footer */}
+        <div className="p-2 border-t border-zinc-200 dark:border-zinc-800">
+          <Link
+            to="/perfil"
+            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+          >
+            {currentUser?.photoURL ? (
+              <img src={currentUser.photoURL} alt="avatar" className="w-7 h-7 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+                <UserCircle className="w-5 h-5 text-indigo-500" />
+              </div>
+            )}
+            {(!collapsed || open) && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                  {currentUser?.displayName ?? currentUser?.email ?? 'Perfil'}
+                </p>
+                <p className="text-[10px] text-zinc-400 font-medium">
+                  {currentUser ? 'Ver perfil' : 'Iniciar sesión'}
+                </p>
+              </div>
+            )}
+          </Link>
+        </div>
       </aside>
     </>
   );

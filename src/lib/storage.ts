@@ -38,17 +38,26 @@ const DEFAULT_DATABASE: Database = {
     totalStudied: 0,
     totalCorrect: 0,
     streakDays: 0,
+    points: 0,
+    masteredCount: 0,
     byGroup: {},
   },
 };
 
+let cachedDb: Database | null = null;
+
 export function loadDatabase(): Database {
+  if (cachedDb) return cachedDb;
+
   if (typeof window === 'undefined') return DEFAULT_DATABASE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_DATABASE };
+    if (!raw) {
+      cachedDb = { ...DEFAULT_DATABASE };
+      return cachedDb;
+    }
     const parsed = JSON.parse(raw) as Partial<Database>;
-    return {
+    cachedDb = {
       meta: { ...DEFAULT_DATABASE.meta, ...parsed.meta },
       cards: parsed.cards ?? {},
       groups: parsed.groups ?? {},
@@ -57,20 +66,67 @@ export function loadDatabase(): Database {
       stats: {
         ...DEFAULT_DATABASE.stats,
         ...parsed.stats,
+        points: parsed.stats?.points ?? 0,
+        masteredCount: parsed.stats?.masteredCount ?? 0,
         byGroup: parsed.stats?.byGroup ?? {},
       },
     };
+    return cachedDb;
   } catch {
-    return { ...DEFAULT_DATABASE };
+    cachedDb = { ...DEFAULT_DATABASE };
+    return cachedDb;
   }
 }
 
+import { auth } from './firebase';
+import { CloudSyncService } from '../services/CloudSyncService';
+
+let saveTimeout: NodeJS.Timeout | null = null;
+
 export function saveDatabase(db: Database): void {
+  cachedDb = db;
   if (typeof window === 'undefined') return;
+
+  // Debounce the heavy disk write and Firebase sync
+  if (saveTimeout) clearTimeout(saveTimeout);
+
+  // Inform the UI immediately for responsiveness
+  window.dispatchEvent(new CustomEvent('storage-update', { detail: db }));
+
+  saveTimeout = setTimeout(() => {
+    db.meta.lastModified = Date.now();
+    const json = JSON.stringify(db);
+    localStorage.setItem(STORAGE_KEY, json);
+    checkStorageSize(json.length);
+
+    // Background upload sync if user is logged in
+    const user = auth.currentUser;
+    if (user) {
+      CloudSyncService.debouncedUpload(user);
+    }
+  }, 1000); // 1 second debounce for disk writes
+}
+
+export function clearDatabaseCache(): void {
+  cachedDb = null;
+}
+
+/**
+ * Force an immediate save of any pending changes.
+ */
+export function flushSave(): void {
+  if (!saveTimeout || !cachedDb) return;
+  clearTimeout(saveTimeout);
+  saveTimeout = null;
+
+  const db = cachedDb;
   db.meta.lastModified = Date.now();
   const json = JSON.stringify(db);
   localStorage.setItem(STORAGE_KEY, json);
-  checkStorageSize(json.length);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushSave);
 }
 
 export function checkStorageSize(byteLength: number): boolean {

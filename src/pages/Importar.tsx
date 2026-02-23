@@ -11,7 +11,7 @@ import {
   loadDatabase,
 } from '../lib/storage';
 import { revertImport, normalizeImportRows, commitImport } from '../services/importService';
-import { SEED_VOCABULARIO_ICFES } from '../data/seedVocabularioIcfes';
+// Removed static import of SEED_VOCABULARIO_ICFES to optimize bundle size
 import { STORAGE_SIZE_WARNING_MB } from '../types';
 
 export function Importar() {
@@ -61,12 +61,13 @@ export function Importar() {
     }
   };
 
-  const handleLoadSeed = () => {
+  const handleLoadSeed = async () => {
     if (!confirm('¿Cargar vocabulario ICFES de prueba? Se agregarán ~130 tarjetas en 12 grupos.')) return;
     setLoadingSeed(true);
     try {
+      const { SEED_VOCABULARIO_ICFES } = await import('../data/seedVocabularioIcfes');
       const parseResult = {
-        rows: SEED_VOCABULARIO_ICFES.map((r) => ({
+        rows: SEED_VOCABULARIO_ICFES.map((r: any) => ({
           word: r.word,
           translation: r.translation,
           definition: r.definition ?? '',

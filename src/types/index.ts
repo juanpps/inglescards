@@ -75,26 +75,39 @@ export interface Settings {
   newInterval: number;
   leechThreshold: number;
   darkMode: boolean;
+  studyMode: 'swipe' | 'classic';
+  initialPackLoaded: boolean;
+  masteredInterval: number;
 }
 
 export interface Stats {
   totalStudied: number;
   totalCorrect: number;
   streakDays: number;
+  points: number;
+  masteredCount: number;
   lastStudyDate?: number;
+  /** Map of week-start-date → points earned that week, e.g. {"2026-02-17": 120} */
+  weeklyPoints?: Record<string, number>;
+  /** Map of YYYY-MM → points earned that month, e.g. {"2026-02": 450} */
+  monthlyPoints?: Record<string, number>;
   byGroup: Record<string, { studied: number; correct: number }>;
 }
 
+
 export const DEFAULT_SETTINGS: Settings = {
-  newCardsPerDay: 20,
+  newCardsPerDay: 50,
   reviewCardsPerDay: 200,
-  learnSteps: [1, 10],
-  lapseSteps: [10],
+  learnSteps: [1, 10, 60, 300],
+  lapseSteps: [10, 60],
   graduatingInterval: 1,
-  easyInterval: 4,
+  easyInterval: 1,
   newInterval: 1,
   leechThreshold: 8,
   darkMode: false,
+  studyMode: 'swipe',
+  initialPackLoaded: false,
+  masteredInterval: 14,
 };
 
 export const STORAGE_KEY = 'icfes_srs_v1';

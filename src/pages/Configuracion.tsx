@@ -5,6 +5,9 @@ import { Input } from '../components/ui/Input';
 import { loadDatabase, saveDatabase, setHasSeenTutorial } from '../lib/storage';
 import { DEFAULT_SETTINGS } from '../types';
 import type { Settings } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { CloudSyncService } from '../services/CloudSyncService';
+import { LogOut, Cloud, CloudOff, RefreshCw, User as UserIcon } from 'lucide-react';
 
 function Section({
   title,
@@ -36,6 +39,7 @@ function Section({
 }
 
 export function Configuracion() {
+  const { currentUser, logout } = useAuth();
   const db = loadDatabase();
   const [newPerDay, setNewPerDay] = useState(db.settings.newCardsPerDay);
   const [reviewPerDay, setReviewPerDay] = useState(db.settings.reviewCardsPerDay);
@@ -54,7 +58,15 @@ export function Configuracion() {
   const [leechThreshold, setLeechThreshold] = useState(
     db.settings.leechThreshold ?? DEFAULT_SETTINGS.leechThreshold
   );
+  const [masteredInterval, setMasteredInterval] = useState(
+    db.settings.masteredInterval ?? DEFAULT_SETTINGS.masteredInterval
+  );
   const [darkMode, setDarkMode] = useState(db.settings.darkMode);
+  const [studyMode, setStudyMode] = useState<'swipe' | 'classic'>(db.settings.darkMode ? (db.settings.studyMode ?? 'swipe') : (db.settings.studyMode ?? 'swipe'));
+  // Wait, db.settings might not have studyMode yet if it was just added to types
+  useEffect(() => {
+    setStudyMode(db.settings.studyMode ?? 'swipe');
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -63,17 +75,19 @@ export function Configuracion() {
   const handleSave = () => {
     const db = loadDatabase();
     const s: Partial<Settings> = {
-      newCardsPerDay: Math.max(1, Math.min(100, newPerDay)),
-      reviewCardsPerDay: Math.max(10, Math.min(500, reviewPerDay)),
-      learnSteps: [Math.max(0.5, learnStep1), Math.max(1, learnStep2)].sort(
-        (a, b) => a - b
-      ),
-      lapseSteps: [Math.max(1, lapseStep)],
+      newCardsPerDay: Math.max(1, Math.min(1000, newPerDay)),
+      reviewCardsPerDay: Math.max(10, Math.min(5000, reviewPerDay)),
+      learnSteps: db.settings.learnSteps.length > 2
+        ? db.settings.learnSteps
+        : [Math.max(0.5, learnStep1), Math.max(1, learnStep2)].sort((a, b) => a - b),
+      lapseSteps: db.settings.lapseSteps,
       graduatingInterval: Math.max(0.5, graduatingInterval),
       easyInterval: Math.max(1, easyInterval),
       newInterval: Math.max(0.5, newInterval),
-      leechThreshold: Math.max(1, Math.min(20, leechThreshold)),
+      leechThreshold: Math.max(1, Math.min(50, leechThreshold)),
+      masteredInterval: Math.max(1, masteredInterval),
       darkMode,
+      studyMode,
     };
     Object.assign(db.settings, s);
     saveDatabase(db);
@@ -86,6 +100,7 @@ export function Configuracion() {
     setEasyInterval(db.settings.easyInterval);
     setNewInterval(db.settings.newInterval);
     setLeechThreshold(db.settings.leechThreshold);
+    setMasteredInterval(db.settings.masteredInterval);
   };
 
   return (
@@ -197,6 +212,20 @@ export function Configuracion() {
               onChange={(e) => setNewInterval(Number(e.target.value) || 1)}
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Umbral de dominio (días)
+            </label>
+            <Input
+              type="number"
+              min={1}
+              value={masteredInterval}
+              onChange={(e) => setMasteredInterval(Number(e.target.value) || 14)}
+            />
+            <p className="text-xs text-zinc-500 mt-1">
+              Cuando el intervalo de una tarjeta alcanza este número de días, se marca como "Dominada".
+            </p>
+          </div>
         </Section>
 
         <Section title="Lapses" defaultOpen={false}>
@@ -237,18 +266,103 @@ export function Configuracion() {
         </Section>
 
         <Section title="Apariencia" defaultOpen={false}>
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="dark"
-              checked={darkMode}
-              onChange={(e) => setDarkMode(e.target.checked)}
-              className="rounded border-zinc-300"
-            />
-            <label htmlFor="dark" className="text-sm font-medium">
-              Modo oscuro
-            </label>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Modo de estudio</label>
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl w-fit">
+                <button
+                  onClick={() => setStudyMode('swipe')}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${studyMode === 'swipe'
+                    ? 'bg-white dark:bg-zinc-700 shadow-sm text-indigo-600 dark:text-indigo-400'
+                    : 'text-zinc-500'
+                    }`}
+                >
+                  Deslizar
+                </button>
+                <button
+                  onClick={() => setStudyMode('classic')}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${studyMode === 'classic'
+                    ? 'bg-white dark:bg-zinc-700 shadow-sm text-indigo-600 dark:text-indigo-400'
+                    : 'text-zinc-500'
+                    }`}
+                >
+                  Botones
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="dark"
+                checked={darkMode}
+                onChange={(e) => setDarkMode(e.target.checked)}
+                className="rounded border-zinc-300 w-4 h-4 text-indigo-600"
+              />
+              <label htmlFor="dark" className="text-sm font-medium">
+                Modo oscuro
+              </label>
+            </div>
           </div>
+        </Section>
+
+        <Section title="Cuenta y Sincronización" defaultOpen={true}>
+          {currentUser ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50">
+                <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white">
+                  <UserIcon className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-indigo-900 dark:text-indigo-100">{currentUser.email}</p>
+                  <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Sincronización activada</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl"
+                  onClick={() => logout()}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Salir
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  className="flex-1 h-12 rounded-xl"
+                  onClick={async () => {
+                    await CloudSyncService.uploadSnapshot(currentUser);
+                    alert("Copia de seguridad subida correctamente");
+                  }}
+                >
+                  <Cloud className="w-4 h-4 mr-2 text-indigo-600" />
+                  Subir a la nube
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="flex-1 h-12 rounded-xl"
+                  onClick={async () => {
+                    const updated = await CloudSyncService.syncFromCloud(currentUser);
+                    if (updated) alert("Datos sincronizados desde la nube");
+                    else alert("Ya estás al día");
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2 text-indigo-600" />
+                  Bajar de la nube
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-center">
+              <CloudOff className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+              <p className="text-sm font-medium text-zinc-500 mb-4">
+                Inicia sesión para sincronizar tu progreso y nunca perder tus tarjetas.
+              </p>
+              <Button onClick={() => window.location.href = '/login'}>
+                Iniciar Sesión
+              </Button>
+            </div>
+          )}
         </Section>
       </div>
 
