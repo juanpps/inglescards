@@ -38,7 +38,6 @@ function PageLoader() {
 
 const SHOW_ONBOARDING_EVENT = 'icfes-show-onboarding';
 
-
 function AppContent() {
   const { currentUser } = useAuth();
   const location = useLocation();
@@ -99,64 +98,63 @@ function AppContent() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          open={sidebarOpen}
-          onToggle={() => setSidebarCollapsed((c) => !c)}
-          onClose={() => setSidebarOpen(false)}
-        />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-30 flex h-14 min-h-[56px] shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-4 pt-[env(safe-area-inset-top)] dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
-            <SidebarTrigger onClick={() => setSidebarOpen(true)} />
-            <span className="font-semibold text-indigo-600">ICFES-SRS</span>
-            <div className="ml-auto flex items-center gap-2">
-              {!currentUser && (
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/login'} className="text-zinc-500">
-                  Entrar
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-xl w-10 h-10 p-0"
-                onClick={() => {
-                  const db = loadDatabase();
-                  const next = !db.settings.darkMode;
-                  db.settings.darkMode = next;
-                  saveDatabase(db);
-                  window.dispatchEvent(new CustomEvent('theme-change', { detail: next }));
-                }}
-              >
-                <Sun className="h-5 w-5 dark:hidden text-amber-500" />
-                <Moon className="h-5 w-5 hidden dark:block text-indigo-400" />
-                <span className="sr-only">Cambiar tema</span>
+    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        open={sidebarOpen}
+        onToggle={() => setSidebarCollapsed((c) => !c)}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="sticky top-0 z-30 flex h-14 min-h-[56px] shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-4 pt-[env(safe-area-inset-top)] dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
+          <SidebarTrigger onClick={() => setSidebarOpen(true)} />
+          <span className="font-semibold text-indigo-600">ICFES-SRS</span>
+          <div className="ml-auto flex items-center gap-2">
+            {!currentUser && (
+              <Button variant="ghost" size="sm" onClick={() => window.location.href = '/login'} className="text-zinc-500">
+                Entrar
               </Button>
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto">
-            <div className="p-4 sm:p-6 lg:p-8">
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/ranking" element={<Ranking />} />
-                  <Route path="/compartir" element={<Compartir />} />
-                  <Route path="/perfil" element={<Perfil />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/estudiar" element={<Estudiar />} />
-                  <Route path="/grupos" element={<Grupos />} />
-                  <Route path="/nueva-tarjeta" element={<NuevaTarjeta />} />
-                  <Route path="/importar" element={<Importar />} />
-                  <Route path="/estadisticas" element={<Estadisticas />} />
-                  <Route path="/configuracion" element={<Configuracion />} />
-                </Routes>
-              </Suspense>
-            </div>
-          </main>
-        </div>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-xl w-10 h-10 p-0"
+              onClick={() => {
+                const db = loadDatabase();
+                const next = !db.settings.darkMode;
+                db.settings.darkMode = next;
+                saveDatabase(db);
+                window.dispatchEvent(new CustomEvent('theme-change', { detail: next }));
+              }}
+            >
+              <Sun className="h-5 w-5 dark:hidden text-amber-500" />
+              <Moon className="h-5 w-5 hidden dark:block text-indigo-400" />
+              <span className="sr-only">Cambiar tema</span>
+            </Button>
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 sm:p-6 lg:p-8">
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/ranking" element={<Ranking />} />
+                <Route path="/compartir" element={<Compartir />} />
+                <Route path="/perfil" element={<Perfil />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/estudiar" element={<Estudiar />} />
+                <Route path="/grupos" element={<Grupos />} />
+                <Route path="/nueva-tarjeta" element={<NuevaTarjeta />} />
+                <Route path="/importar" element={<Importar />} />
+                <Route path="/estadisticas" element={<Estadisticas />} />
+                <Route path="/configuracion" element={<Configuracion />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </main>
       </div>
+
       {showOnboarding && (
         <Suspense fallback={null}>
           <OnboardingOverlay onComplete={handleOnboardingComplete} />
@@ -169,15 +167,17 @@ function AppContent() {
       )}
       <Analytics />
       <AchievementOverlay />
-    </BrowserRouter>
+    </div>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
