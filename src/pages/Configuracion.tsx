@@ -8,6 +8,7 @@ import type { Settings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { CloudSyncService } from '../services/CloudSyncService';
 import { LogOut, Cloud, CloudOff, RefreshCw, User as UserIcon } from 'lucide-react';
+import { NotificationService } from '../services/NotificationService';
 
 function Section({
   title,
@@ -62,6 +63,7 @@ export function Configuracion() {
     db.settings.masteredInterval ?? DEFAULT_SETTINGS.masteredInterval
   );
   const [darkMode, setDarkMode] = useState(db.settings.darkMode);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(db.settings.notificationsEnabled ?? false);
   const [studyMode, setStudyMode] = useState<'swipe' | 'classic'>(db.settings.darkMode ? (db.settings.studyMode ?? 'swipe') : (db.settings.studyMode ?? 'swipe'));
   // Wait, db.settings might not have studyMode yet if it was just added to types
   useEffect(() => {
@@ -87,6 +89,7 @@ export function Configuracion() {
       leechThreshold: Math.max(1, Math.min(50, leechThreshold)),
       masteredInterval: Math.max(1, masteredInterval),
       darkMode,
+      notificationsEnabled,
       studyMode,
     };
     Object.assign(db.settings, s);
@@ -101,6 +104,7 @@ export function Configuracion() {
     setNewInterval(db.settings.newInterval);
     setLeechThreshold(db.settings.leechThreshold);
     setMasteredInterval(db.settings.masteredInterval);
+    setNotificationsEnabled(db.settings.notificationsEnabled ?? false);
   };
 
   return (
@@ -300,6 +304,28 @@ export function Configuracion() {
               />
               <label htmlFor="dark" className="text-sm font-medium">
                 Modo oscuro
+              </label>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="notifications"
+                checked={notificationsEnabled}
+                onChange={async (e) => {
+                  const enabled = e.target.checked;
+                  if (enabled) {
+                    const granted = await NotificationService.requestPermission();
+                    if (!granted) {
+                      alert("Para activar recordatorios, debes permitir las notificaciones en tu navegador.");
+                      return;
+                    }
+                  }
+                  setNotificationsEnabled(enabled);
+                }}
+                className="rounded border-zinc-300 w-4 h-4 text-indigo-600"
+              />
+              <label htmlFor="notifications" className="text-sm font-medium">
+                Recordatorios de estudio (Notificaciones)
               </label>
             </div>
           </div>

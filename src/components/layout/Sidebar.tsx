@@ -15,6 +15,7 @@ import {
   Trophy,
   Share2,
   UserCircle,
+  Info
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -28,6 +29,7 @@ const navItems = [
   { to: '/importar', icon: Upload, label: 'Importar', dataOnboarding: 'import' as const },
   { to: '/estadisticas', icon: BarChart3, label: 'Estadísticas', dataOnboarding: 'estadisticas' as const },
   { to: '/configuracion', icon: Settings, label: 'Configuración', dataOnboarding: 'config' as const },
+  { to: '/about', icon: Info, label: 'Acerca de' },
 ];
 
 interface SidebarProps {

@@ -41,6 +41,7 @@ const DEFAULT_DATABASE: Database = {
     points: 0,
     masteredCount: 0,
     byGroup: {},
+    unlockedAchievements: []
   },
 };
 

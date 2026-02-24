@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { loadDatabase } from '../lib/storage';
 import { CloudSyncService } from '../services/CloudSyncService';
 import { getPointsTier } from '../services/LeaderboardService';
+import { ACHIEVEMENTS } from '../types/achievements';
 import { auth } from '../lib/firebase';
 
 function StatPill({
@@ -247,6 +248,37 @@ export function Perfil() {
                 </div>
                 <div className="flex gap-3">
                     <StatPill icon={BarChart3} value={stats.totalStudied.toLocaleString()} label="Repasos" color="text-violet-500" />
+                    <StatPill icon={Trophy} value={(db.stats.unlockedAchievements || []).length} label="Logros" color="text-amber-500" />
+                </div>
+            </div>
+
+            {/* Achievements Section */}
+            <div className="space-y-3">
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400 px-1">Logros Desbloqueados</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {ACHIEVEMENTS.map((ach) => {
+                        const isUnlocked = (db.stats.unlockedAchievements || []).includes(ach.id);
+                        return (
+                            <Card
+                                key={ach.id}
+                                className={`border-none rounded-2xl shadow-sm overflow-hidden transition-all ${isUnlocked ? 'bg-white dark:bg-zinc-900 border-2 border-amber-400' : 'bg-zinc-100 dark:bg-zinc-800 opacity-60 grayscale'
+                                    }`}
+                            >
+                                <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                                    <div className="text-3xl mb-1">{ach.icon}</div>
+                                    <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-50 leading-tight">{ach.title}</h3>
+                                    <p className="text-[9px] font-bold text-zinc-400 leading-tight">{ach.description}</p>
+                                    {isUnlocked && (
+                                        <div className="absolute top-1 right-1">
+                                            <div className="w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center">
+                                                <Check className="w-2.5 h-2.5 text-white" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
             </div>
 

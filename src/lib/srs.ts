@@ -5,6 +5,7 @@
 
 import type { Card, Settings } from '../types';
 import { loadDatabase, saveDatabase } from './storage';
+import { AchievementService } from '../services/AchievementService';
 
 export type ReviewQuality = 1 | 2 | 3 | 4 | 5;
 // Swipe mapping: Left = 1 (Failure), Right = 5 (Success)
@@ -267,6 +268,9 @@ function _applyStatsUpdate(db: import('./storage').Database, correct: boolean, g
     db.stats.byGroup[gid].studied += 1;
     if (correct) db.stats.byGroup[gid].correct += 1;
   }
+
+  // Check for achievements
+  AchievementService.checkAndUnlock();
 }
 
 /** Public API — loads + saves. Use saveCardAndStats() in the study loop instead. */

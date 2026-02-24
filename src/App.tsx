@@ -1,9 +1,11 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { AchievementOverlay } from './components/AchievementOverlay';
 import { Analytics } from '@vercel/analytics/react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Sidebar, SidebarTrigger } from './components/layout/Sidebar';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { loadDatabase, getHasSeenTutorial, setHasSeenTutorial, saveDatabase } from './lib/storage';
+import { NotificationService } from './services/NotificationService';
 import './index.css';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from './components/ui/Button';
@@ -22,6 +24,7 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 const Ranking = lazy(() => import('./pages/Ranking').then(m => ({ default: m.Ranking })));
 const Compartir = lazy(() => import('./pages/Compartir').then(m => ({ default: m.Compartir })));
 const Perfil = lazy(() => import('./pages/Perfil').then(m => ({ default: m.Perfil })));
+const About = lazy(() => import('./pages/About').then(m => ({ default: m.About })));
 const OnboardingOverlay = lazy(() => import('./components/onboarding/OnboardingOverlay').then(m => ({ default: m.OnboardingOverlay })));
 const InitialImportModal = lazy(() => import('./components/import/InitialImportModal').then(m => ({ default: m.InitialImportModal })));
 
@@ -54,7 +57,11 @@ function AppContent() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [isDark]);
+
+    if (initialDb.settings.notificationsEnabled) {
+      NotificationService.scheduleDailyReminder(initialDb.meta.lastModified);
+    }
+  }, [isDark, initialDb.settings.notificationsEnabled]);
 
   useEffect(() => {
     const handler = () => setShowOnboarding(true);
@@ -126,6 +133,7 @@ function AppContent() {
                   <Route path="/ranking" element={<Ranking />} />
                   <Route path="/compartir" element={<Compartir />} />
                   <Route path="/perfil" element={<Perfil />} />
+                  <Route path="/about" element={<About />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/estudiar" element={<Estudiar />} />
                   <Route path="/grupos" element={<Grupos />} />
@@ -150,6 +158,7 @@ function AppContent() {
         </Suspense>
       )}
       <Analytics />
+      <AchievementOverlay />
     </BrowserRouter>
   );
 }

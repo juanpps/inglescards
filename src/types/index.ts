@@ -78,6 +78,7 @@ export interface Settings {
   studyMode: 'swipe' | 'classic';
   initialPackLoaded: boolean;
   masteredInterval: number;
+  notificationsEnabled: boolean;
 }
 
 export interface Stats {
@@ -92,6 +93,7 @@ export interface Stats {
   /** Map of YYYY-MM → points earned that month, e.g. {"2026-02": 450} */
   monthlyPoints?: Record<string, number>;
   byGroup: Record<string, { studied: number; correct: number }>;
+  unlockedAchievements: string[];
 }
 
 
@@ -108,6 +110,7 @@ export const DEFAULT_SETTINGS: Settings = {
   studyMode: 'swipe',
   initialPackLoaded: false,
   masteredInterval: 14,
+  notificationsEnabled: false,
 };
 
 export const STORAGE_KEY = 'icfes_srs_v1';
