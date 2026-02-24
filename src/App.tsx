@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { AchievementOverlay } from './components/AchievementOverlay';
 import { Analytics } from '@vercel/analytics/react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarTrigger } from './components/layout/Sidebar';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { loadDatabase, getHasSeenTutorial, setHasSeenTutorial, saveDatabase } from './lib/storage';
@@ -41,15 +41,18 @@ const SHOW_ONBOARDING_EVENT = 'icfes-show-onboarding';
 
 function AppContent() {
   const { currentUser } = useAuth();
+  const location = useLocation();
   const initialDb = loadDatabase();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     const totalCards = Object.keys(initialDb.cards).length;
-    return !getHasSeenTutorial() && totalCards === 0;
+    return !getHasSeenTutorial() && totalCards === 0 && !currentUser;
   });
   const [isDark, setIsDark] = useState(initialDb.settings.darkMode);
-  const [showInitialPack, setShowInitialPack] = useState(!initialDb.settings.initialPackLoaded);
+  const [showInitialPack, setShowInitialPack] = useState(!initialDb.settings.initialPackLoaded && !currentUser);
+
+  const isLoginPage = location.pathname === '/login';
 
   useEffect(() => {
     if (isDark) {
@@ -62,6 +65,13 @@ function AppContent() {
       NotificationService.scheduleDailyReminder(initialDb.meta.lastModified);
     }
   }, [isDark, initialDb.settings.notificationsEnabled]);
+
+  // Cerrar el pack inicial si el usuario inicia sesión
+  useEffect(() => {
+    if (currentUser) {
+      setShowInitialPack(false);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const handler = () => setShowOnboarding(true);
@@ -152,7 +162,7 @@ function AppContent() {
           <OnboardingOverlay onComplete={handleOnboardingComplete} />
         </Suspense>
       )}
-      {showInitialPack && (
+      {showInitialPack && !isLoginPage && (
         <Suspense fallback={null}>
           <InitialImportModal onComplete={() => setShowInitialPack(false)} />
         </Suspense>
